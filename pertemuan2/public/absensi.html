@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Absensi Mahasiswa</title>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f2f2f2;
+        padding: 30px;
+    }
+
+    .container {
+        max-width: 900px;
+        margin: auto;
+        background-color: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    h1 {
+        text-align: center;
+    }
+
+    .form {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 30px;
+    }
+
+    input, select, button {
+        padding: 10px;
+        font-size: 14px;
+    }
+
+    input {
+        flex: 1;
+    }
+
+    select {
+        width: 130px;
+    }
+
+    button {
+        background-color: #333;
+        color: white;
+        border: none;
+        cursor: pointer;
+        border-radius: 5px;
+    }
+
+    button:hover {
+        background-color: #555;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th, td {
+        border: 1px solid #ccc;
+        padding: 10px;
+        text-align: center;
+    }
+
+    th {
+        background-color: #ddd;
+    }
+
+    .hapus {
+        background-color: #d9534f;
+    }
+
+    .hapus:hover {
+        background-color: #c9302c;
+    }
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>Absensi Mahasiswa</h1>
+
+<div class="form">
+
+    <input 
+        type="text" 
+        id="nama" 
+        placeholder="Masukkan Nama"
+    >
+
+    <input 
+        type="text" 
+        id="nim" 
+        placeholder="Masukkan NIM"
+    >
+
+    <select id="status">
+        <option value="Hadir">Hadir</option>
+        <option value="Sakit">Sakit</option>
+        <option value="Izin">Izin</option>
+    </select>
+
+    <button onclick="tambahAbsensi()">Tambah</button>
+
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>No</th>
+            <th>Nama</th>
+            <th>NIM</th>
+            <th>Status</th>
+            <th>Aksi</th>
+        </tr>
+    </thead>
+
+    <tbody id="tabelAbsensi">
+    </tbody>
+</table>
+
+</div>
+
+<script>
+
+    // ==========================================
+    // MENAMBAHKAN DATA ABSENSI
+    // ==========================================
+
+    function tambahAbsensi() {
+
+        let nama = document.getElementById("nama").value.trim();
+        let nim = document.getElementById("nim").value.trim();
+        let status = document.getElementById("status").value;
+
+        // Mengecek input
+        if (nama === "" || nim === "") {
+            alert("Nama dan NIM harus diisi!");
+            return;
+        }
+
+        // Mengirim data ke Node.js
+        fetch("/absensi", {
+            method: "POST",
+
+            headers: {
+                "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify({
+                nama: nama,
+                nim: nim,
+                status: status
+            })
+        })
+
+        .then(response => response.json())
+
+        .then(data => {
+
+            alert(data.message);
+
+            // Kosongkan input
+            document.getElementById("nama").value = "";
+            document.getElementById("nim").value = "";
+
+            // Tampilkan data terbaru
+            tampilkanAbsensi();
+
+        })
+
+        .catch(error => {
+
+            console.error(error);
+
+            alert("Gagal terhubung ke server!");
+
+        });
+
+    }
+
+
+    // ==========================================
+    // MENAMPILKAN DATA DARI MYSQL
+    // ==========================================
+
+    function tampilkanAbsensi() {
+
+        fetch("/absensi")
+
+        .then(response => response.json())
+
+        .then(data => {
+
+            let tabel = document.getElementById("tabelAbsensi");
+
+            tabel.innerHTML = "";
+
+            data.forEach((item, index) => {
+
+                let baris = tabel.insertRow();
+
+                baris.insertCell(0).innerHTML = index + 1;
+                baris.insertCell(1).innerHTML = item.nama;
+                baris.insertCell(2).innerHTML = item.nim;
+                baris.insertCell(3).innerHTML = item.status;
+
+                // Tombol hapus
+                let tombolHapus = document.createElement("button");
+
+                tombolHapus.innerHTML = "Hapus";
+                tombolHapus.className = "hapus";
+
+                tombolHapus.onclick = function() {
+
+                    hapusAbsensi(item.id);
+
+                };
+
+                baris.insertCell(4).appendChild(tombolHapus);
+
+            });
+
+        })
+
+        .catch(error => {
+
+            console.error(error);
+
+        });
+
+    }
+
+
+    // ==========================================
+    // MENGHAPUS DATA
+    // ==========================================
+
+    function hapusAbsensi(id) {
+
+        if (!confirm("Apakah kamu yakin ingin menghapus data ini?")) {
+            return;
+        }
+
+        fetch("/absensi/" + id, {
+            method: "DELETE"
+        })
+
+        .then(response => response.json())
+
+        .then(data => {
+
+            alert(data.message);
+
+            tampilkanAbsensi();
+
+        })
+
+        .catch(error => {
+
+            console.error(error);
+
+            alert("Gagal menghapus data!");
+
+        });
+
+    }
+
+
+    // ==========================================
+    // LOAD DATA SAAT HALAMAN DIBUKA
+    // ==========================================
+
+    tampilkanAbsensi();
+
+</script>
+
+</body>
+</html>
